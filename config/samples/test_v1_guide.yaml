@@ -1,0 +1,9 @@
+apiVersion: test.kubeassemble.cn/v1
+kind: Guide
+metadata:
+  labels:
+    app.kubernetes.io/name: paas-server
+    app.kubernetes.io/managed-by: kustomize
+  name: guide-sample
+spec:
+  # TODO(user): Add fields here
