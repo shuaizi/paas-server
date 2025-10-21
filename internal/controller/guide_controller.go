@@ -18,6 +18,15 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,10 +55,65 @@ type GuideReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.22.1/pkg/reconcile
-func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	_ = logf.FromContext(ctx)
 
-	// TODO(user): your logic here
+	key := req.NamespacedName.String()
+	klog.Infof("Reconcile guide: %s", key)
+	start := time.Now()
+	msg := ""
+	defer func() {
+		if err != nil {
+			klog.Errorf("Failed to reconcile guide[%s] Error: %v", key, err)
+		} else {
+			if result.RequeueAfter > 0 || result.Requeue {
+				klog.Infof("reconcile guide[%s] need requeue: %v", key, time.Since(start))
+			} else {
+				klog.Infof("Finished reconcile guide[%s]: %v", key, time.Since(start))
+			}
+		}
+	}()
+
+	guide := &testv1.Guide{}
+	if err = r.Get(context.TODO(), req.NamespacedName, guide); err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{RequeueAfter: 3 * time.Second}, err
+	}
+
+	nsName := types.NamespacedName{
+		Namespace: "default",
+		Name:      *guide.Spec.WorkloadName,
+	}
+
+	sts := &appsv1.StatefulSet{}
+	if err = r.Get(context.TODO(), nsName, sts); err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{RequeueAfter: 3 * time.Second}, err
+	}
+
+	if *sts.Spec.Replicas == *guide.Spec.Replica {
+		klog.Infof("same replica of guide[%s]", key)
+	} else {
+		if err = r.Update(context.TODO(), sts); err != nil {
+			klog.Errorf("Failed to update statefulset %s/%s: %v", sts.Namespace, sts.Name, err)
+			return reconcile.Result{RequeueAfter: 3 * time.Second}, err
+		}
+		msg = fmt.Sprintf("update sts %s/%s successfully", sts.Namespace, sts.Name)
+		klog.Info(msg)
+	}
+
+	// update guide status
+	guide.Status.LastTransitionTime = metav1.Time{
+		Time: time.Now(),
+	}
+	guide.Status.Message = msg
+	if err = r.Status().Update(ctx, guide); err != nil {
+		klog.Errorf("Failed to update guide[%s] Status: %v", key, err)
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -57,7 +121,7 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *GuideReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&testv1.Guide{}).
+		For(&testv1.Guide{}, builder.WithPredicates(&guidePredicate{})).
 		Named("guide").
 		Complete(r)
 }

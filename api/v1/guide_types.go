@@ -33,6 +33,10 @@ type GuideSpec struct {
 	// foo is an example field of Guide. Edit guide_types.go to remove/update
 	// +optional
 	Foo *string `json:"foo,omitempty"`
+
+	Replica *int32 `json:"replica,omitempty"`
+
+	WorkloadName *string `json:"workloadName,omitempty"`
 }
 
 // GuideStatus defines the observed state of Guide.
@@ -55,7 +59,9 @@ type GuideStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions         []metav1.Condition `json:"conditions,omitempty"`
+	LastTransitionTime metav1.Time        `json:"lastTransitionTime,omitempty"`
+	Message            string             `json:"message,omitempty"`
 }
 
 // +kubebuilder:object:root=true

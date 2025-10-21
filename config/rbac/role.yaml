@@ -1,11 +1,32 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: paas-server
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - test.kubeassemble.cn
+  resources:
+  - guides
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - test.kubeassemble.cn
+  resources:
+  - guides/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - test.kubeassemble.cn
+  resources:
+  - guides/status
+  verbs:
+  - get
+  - patch
+  - update
