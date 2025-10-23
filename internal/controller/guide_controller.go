@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +28,6 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,7 +59,7 @@ type GuideReconciler struct {
 func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	_ = logf.FromContext(ctx)
 
-	key := req.NamespacedName.String()
+	key := req.String()
 	klog.Infof("Reconcile guide: %s", key)
 	start := time.Now()
 	msg := ""
@@ -66,7 +67,7 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 		if err != nil {
 			klog.Errorf("Failed to reconcile guide[%s] Error: %v", key, err)
 		} else {
-			if result.RequeueAfter > 0 || result.Requeue {
+			if result.RequeueAfter > 0 {
 				klog.Infof("reconcile guide[%s] need requeue: %v", key, time.Since(start))
 			} else {
 				klog.Infof("Finished reconcile guide[%s]: %v", key, time.Since(start))
@@ -80,6 +81,11 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{RequeueAfter: 3 * time.Second}, err
+	}
+
+	if guide.Spec.WorkloadName == nil || guide.Spec.Replica == nil {
+		klog.Warningf("workload name or replica not exist")
+		return reconcile.Result{}, nil
 	}
 
 	nsName := types.NamespacedName{
