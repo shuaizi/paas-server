@@ -104,6 +104,7 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 	if *sts.Spec.Replicas == *guide.Spec.Replica {
 		klog.Infof("same replica of guide[%s]", key)
 	} else {
+		sts.Spec.Replicas = guide.Spec.Replica
 		if err = r.Update(context.TODO(), sts); err != nil {
 			klog.Errorf("Failed to update statefulset %s/%s: %v", sts.Namespace, sts.Name, err)
 			return reconcile.Result{RequeueAfter: 3 * time.Second}, err
