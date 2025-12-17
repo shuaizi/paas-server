@@ -33,7 +33,7 @@ func (p *guidePredicate) Update(e event.UpdateEvent) bool {
 		return false
 	}
 	klog.V(4).Infof("guidePredicate: %s/%s updated, enqueue", newGuide.Namespace, newGuide.Name)
-	return false
+	return true
 }
 
 func (p *guidePredicate) Generic(_ event.GenericEvent) bool {
