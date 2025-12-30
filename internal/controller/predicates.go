@@ -11,10 +11,10 @@ type guidePredicate struct{}
 func (p *guidePredicate) Create(e event.CreateEvent) bool {
 	guide := e.Object.(*v1.Guide)
 	if guide.Spec.Replica == nil || guide.Spec.WorkloadName == nil {
-		klog.V(4).Infof("guidePredicate: guide %s/%s replicas or workloadName is nil", guide.Namespace, guide.Name)
+		klog.Infof("guidePredicate: guide %s/%s replicas or workloadName is nil", guide.Namespace, guide.Name)
 		return false
 	}
-	klog.V(4).Infof("guidePredicate: %s/%s new creation, enqueue", guide.Namespace, guide.Name)
+	klog.Infof("guidePredicate: %s/%s new creation, enqueue", guide.Namespace, guide.Name)
 	return true
 }
 
@@ -28,11 +28,11 @@ func (p *guidePredicate) Update(e event.UpdateEvent) bool {
 	newGuide := e.ObjectNew.(*v1.Guide)
 
 	// first time to be labeled
-	if oldGuide.Spec.Replica == newGuide.Spec.Replica && oldGuide.Spec.WorkloadName == newGuide.Spec.WorkloadName {
-		klog.V(4).Infof("guidePredicate: guide %s/%s not update, ignore", newGuide.Namespace, newGuide.Name)
+	if *oldGuide.Spec.Replica == *newGuide.Spec.Replica && *oldGuide.Spec.WorkloadName == *newGuide.Spec.WorkloadName {
+		klog.Infof("guidePredicate: guide %s/%s not update, ignore", newGuide.Namespace, newGuide.Name)
 		return false
 	}
-	klog.V(4).Infof("guidePredicate: %s/%s updated, enqueue", newGuide.Namespace, newGuide.Name)
+	klog.Infof("guidePredicate: %s/%s updated, enqueue", newGuide.Namespace, newGuide.Name)
 	return true
 }
 

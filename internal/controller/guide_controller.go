@@ -103,6 +103,7 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 
 	if *sts.Spec.Replicas == *guide.Spec.Replica {
 		klog.Infof("same replica of guide[%s]", key)
+		return reconcile.Result{}, nil
 	} else {
 		sts.Spec.Replicas = guide.Spec.Replica
 		if err = r.Update(context.TODO(), sts); err != nil {
@@ -113,6 +114,7 @@ func (r *GuideReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 		klog.Info(msg)
 	}
 
+	_ = r.Get(context.TODO(), req.NamespacedName, guide)
 	// update guide status
 	guide.Status.LastTransitionTime = metav1.Time{
 		Time: time.Now(),

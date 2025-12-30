@@ -19,6 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"k8s.io/klog/v2"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -37,6 +38,7 @@ import (
 
 	testv1 "kubeassemble.cn/guide/api/v1"
 	"kubeassemble.cn/guide/internal/controller"
+	webhookv1 "kubeassemble.cn/guide/internal/webhook"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -86,6 +88,9 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	klog.InitFlags(nil)
+	defer klog.Flush()
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -186,6 +191,10 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+	if err = webhookv1.SetupWebhookWithManager(mgr, webhookv1.HandleMap); err != nil {
+		setupLog.Error(err, "unable to setup webhook", "controller", "Guide")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
