@@ -61,5 +61,5 @@ func (m *PodMutator) InjectDecoder(d admission.Decoder) error {
 }
 
 func init() {
-	HandleMap["mutate-v1-pod"] = &PodMutator{}
+	HandleMap["/mutate-v1-pod"] = &PodMutator{}
 }
