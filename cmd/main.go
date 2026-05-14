@@ -190,6 +190,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Guide")
 		os.Exit(1)
 	}
+	if err := (&controller.PodReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Pod")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 	if err = webhookv1.SetupWebhookWithManager(mgr, webhookv1.HandleMap); err != nil {
 		setupLog.Error(err, "unable to setup webhook", "controller", "Guide")
