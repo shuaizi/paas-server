@@ -1,0 +1,29 @@
+# This rule is not used by the project paas-server itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to test.kubeassemble.cn resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: paas-server
+    app.kubernetes.io/managed-by: kustomize
+  name: guide-viewer-role
+rules:
+- apiGroups:
+  - test.kubeassemble.cn
+  resources:
+  - guides
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - test.kubeassemble.cn
+  resources:
+  - guides/status
+  verbs:
+  - get
