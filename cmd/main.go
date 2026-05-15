@@ -110,20 +110,17 @@ func main() {
 
 	// Initial webhook TLS options
 	webhookTLSOpts := tlsOpts
-	webhookServerOptions := webhook.Options{
-		TLSOpts: webhookTLSOpts,
-	}
-
+	var webhookServer webhook.Server
 	if len(webhookCertPath) > 0 {
 		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
 			"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
-
-		webhookServerOptions.CertDir = webhookCertPath
-		webhookServerOptions.CertName = webhookCertName
-		webhookServerOptions.KeyName = webhookCertKey
+		webhookServer = webhook.NewServer(webhook.Options{
+			TLSOpts:  webhookTLSOpts,
+			CertDir:  webhookCertPath,
+			CertName: webhookCertName,
+			KeyName:  webhookCertKey,
+		})
 	}
-
-	webhookServer := webhook.NewServer(webhookServerOptions)
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
 	// More info:
@@ -160,10 +157,9 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	managerOptions := ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
-		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "919ef780.kubeassemble.cn",
@@ -178,7 +174,12 @@ func main() {
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
-	})
+	}
+	if webhookServer != nil {
+		managerOptions.WebhookServer = webhookServer
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -198,9 +199,11 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
-	if err = webhookv1.SetupWebhookWithManager(mgr, webhookv1.HandleMap); err != nil {
-		setupLog.Error(err, "unable to setup webhook", "controller", "Guide")
-		os.Exit(1)
+	if webhookServer != nil {
+		if err = webhookv1.SetupWebhookWithManager(mgr, webhookv1.HandleMap); err != nil {
+			setupLog.Error(err, "unable to setup webhook", "controller", "Guide")
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
