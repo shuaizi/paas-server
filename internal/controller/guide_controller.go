@@ -46,6 +46,7 @@ type GuideReconciler struct {
 // +kubebuilder:rbac:groups=test.kubeassemble.cn,resources=guides,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=test.kubeassemble.cn,resources=guides/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=test.kubeassemble.cn,resources=guides/finalizers,verbs=update
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
